@@ -1,52 +1,115 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const app = express();
-const port = 3000;
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const { Database, aql } = require("arangojs");
 
+const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '/')));
+app.use(express.static(path.join(__dirname, "public"))); // serve public folder
 
-// Movie data with description
+// Connect to ArangoDB
+const db = new Database({ url: "http://localhost:8529" });
+db.useBasicAuth("root", "root");
+
+const dbName = "watchme";
+let watchme;
+
+// Movies data
 const movies = [
-  { title: "Inception", year: 2010, director: "Christopher Nolan", genre: "Sci-Fi", poster: "https://a.ltrbxd.com/resized/sm/upload/sv/95/s9/4j/inception-0-460-0-690-crop.jpg?v=30d7224316 2x", description: "A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O." },
-  { title: "Interstellar", year: 2014, director: "Christopher Nolan", genre: "Sci-Fi", poster: "https://image.tmdb.org/t/p/w300/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival." },
-  { title: "The Dark Knight", year: 2008, director: "Christopher Nolan", genre: "Action", poster: "https://image.tmdb.org/t/p/w300/qJ2tW6WMUDux911r6m7haRef0WH.jpg", description: "Batman raises the stakes in his war on crime when a criminal mastermind known as the Joker emerges." },
-  { title: "Avatar", year: 2009, director: "James Cameron", genre: "Sci-Fi", poster: "https://image.tmdb.org/t/p/w300/jRXYjXNq0Cs2TcJjLkki24MLp7u.jpg", description: "A paraplegic Marine dispatched to the moon Pandora becomes torn between following his orders and protecting an alien civilization." },
-  { title: "Titanic", year: 1997, director: "James Cameron", genre: "Romance", poster: "https://image.tmdb.org/t/p/w300/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg", description: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic." },
-  { title: "Pulp Fiction", year: 1994, director: "Quentin Tarantino", genre: "Crime", poster: "https://image.tmdb.org/t/p/w300/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg", description: "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales of violence and redemption." },
-  { title: "Django Unchained", year: 2012, director: "Quentin Tarantino", genre: "Western", poster: "https://image.tmdb.org/t/p/w300/7oWY8VDWW7thTzWh3OKYRkWUlD5.jpg", description: "With the help of a German bounty hunter, a freed slave sets out to rescue his wife from a brutal plantation owner." },
-  { title: "The Matrix", year: 1999, director: "Lana Wachowski", genre: "Sci-Fi", poster: "https://image.tmdb.org/t/p/w300/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", description: "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers." },
-  { title: "John Wick", year: 2014, director: "Chad Stahelski", genre: "Action", poster: "https://image.tmdb.org/t/p/w300/fZPSd91yGE9fCcCe6OoQr6E3Bev.jpg", description: "An ex-hitman comes out of retirement to track down the gangsters that killed his dog and took everything from him." },
-  { title: "Gladiator", year: 2000, director: "Ridley Scott", genre: "Action", poster: "https://image.tmdb.org/t/p/w300/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg", description: "A former Roman General sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery." }
+  { title: "Inception", director: "Christopher Nolan", genre: "Sci-Fi", poster: "https://a.ltrbxd.com/resized/sm/upload/sv/95/s9/4j/inception-0-2000-0-3000-crop.jpg?v=30d7224316" },
+  { title: "The Dark Knight", director: "Christopher Nolan", genre: "Action", poster: "https://a.ltrbxd.com/resized/sm/upload/78/y5/zg/ej/oefdD26aey8GPdx7Rm45PNncJdU-0-2000-0-3000-crop.jpg?v=2d0ce4be25" },
+  { title: "Tenet", director: "Christopher Nolan", genre: "Action", poster: "https://a.ltrbxd.com/resized/sm/upload/pq/9f/sr/vt/aCIFMriQh8rvhxpN1IWGgvH0Tlg-0-2000-0-3000-crop.jpg?v=f3165fe17f" },
+  { title: "Oppenheimer", director: "Christopher Nolan", genre: "Biography", poster: "https://a.ltrbxd.com/resized/film-poster/7/8/4/3/2/8/784328-oppenheimer-0-2000-0-3000-crop.jpg?v=e3c6e7a32c" },
+  { title: "Pulp Fiction", director: "Quentin Tarantino", genre: "Crime", poster: "https://a.ltrbxd.com/resized/film-poster/5/1/4/4/4/51444-pulp-fiction-0-2000-0-3000-crop.jpg?v=dee19a8077" },
+  { title: "Django Unchained", director: "Quentin Tarantino", genre: "Western", poster: "https://a.ltrbxd.com/resized/film-poster/5/2/5/1/6/52516-django-unchained-0-2000-0-3000-crop.jpg?v=f02aed63a3" },
+  { title: "Kill Bill Vol.1", director: "Quentin Tarantino", genre: "Action", poster: "https://a.ltrbxd.com/resized/sm/upload/sw/w2/ep/v4/9O50TVszkz0dcP5g6Ej33UhR7vw-0-2000-0-3000-crop.jpg?v=5a65f5202f" },
+  { title: "Inglourious Basterds", director: "Quentin Tarantino", genre: "War", poster: "https://a.ltrbxd.com/resized/film-poster/4/1/3/5/2/41352-inglourious-basterds-0-2000-0-3000-crop.jpg?v=0c74c673e0" },
+  { title: "The Matrix", director: "The Wachowskis", genre: "Sci-Fi", poster: "https://a.ltrbxd.com/resized/film-poster/5/1/5/1/8/51518-the-matrix-0-2000-0-3000-crop.jpg?v=fc7c366afe" },
+  { title: "Gladiator", director: "Ridley Scott", genre: "Action", poster: "https://a.ltrbxd.com/resized/film-poster/5/1/9/5/2/51952-gladiator-2000-0-2000-0-3000-crop.jpg?v=0071a74571" },
+  { title: "The Godfather", director: "Francis Ford Coppola", genre: "Crime", poster: "https://a.ltrbxd.com/resized/film-poster/5/1/8/1/8/51818-the-godfather-0-2000-0-3000-crop.jpg?v=bca8b67402" },
+  { title: "The Shawshank Redemption", director: "Frank Darabont", genre: "Drama", poster: "https://a.ltrbxd.com/resized/sm/upload/7l/hn/46/uz/zGINvGjdlO6TJRu9wESQvWlOKVT-0-2000-0-3000-crop.jpg?v=8736d1c395" },
+  { title: "Forrest Gump", director: "Robert Zemeckis", genre: "Drama", poster: "https://a.ltrbxd.com/resized/film-poster/2/7/0/4/2704-forrest-gump-0-2000-0-3000-crop.jpg?v=173bc04cf0" },
+  { title: "The Matrix Resurrections", director: "The Wachowskis", genre: "Action", poster: "https://a.ltrbxd.com/resized/film-poster/5/5/1/2/7/5/551275-the-matrix-resurrections-0-2000-0-3000-crop.jpg?v=dcca87ec62" }
 ];
 
-// Search a movie by title
-app.get('/search', (req, res) => {
-  const title = req.query.title?.toLowerCase();
-  const movie = movies.find(m => m.title.toLowerCase() === title);
-  if (movie) res.json(movie);
-  else res.status(404).json({ error: "Movie not found" });
+// Initialize database
+(async () => {
+  const databases = await db.listDatabases();
+  if (!databases.includes(dbName)) await db.createDatabase(dbName);
+  watchme = db.database(dbName);
+  await setupCollections();
+  await seedData();
+})();
+
+// Setup collections
+async function setupCollections() {
+  const collections = ["Movies", "Directors", "Genres", "DIRECTED", "BELONGS_TO"];
+  for (const name of collections) {
+    const coll = watchme.collection(name);
+    if (!(await coll.exists())) {
+      if (name === "DIRECTED" || name === "BELONGS_TO") await coll.create({ type: 3 });
+      else await coll.create();
+    }
+  }
+}
+
+// Seed movies and relationships
+async function seedData() {
+  const movieColl = watchme.collection("Movies");
+  const directorColl = watchme.collection("Directors");
+  const genreColl = watchme.collection("Genres");
+  const directEdge = watchme.collection("DIRECTED");
+  const belongsEdge = watchme.collection("BELONGS_TO");
+
+  for (const m of movies) {
+    const movieKey = m.title.replace(/\s+/g, "_");
+    const dirKey = m.director.replace(/\s+/g, "_");
+    const genreKey = m.genre.replace(/\s+/g, "_");
+
+    await movieColl.save({ _key: movieKey, ...m }).catch(() => {});
+    await directorColl.save({ _key: dirKey, name: m.director }).catch(() => {});
+    await genreColl.save({ _key: genreKey, name: m.genre }).catch(() => {});
+    await directEdge.save({ _from: `Directors/${dirKey}`, _to: `Movies/${movieKey}` }).catch(() => {});
+    await belongsEdge.save({ _from: `Movies/${movieKey}`, _to: `Genres/${genreKey}` }).catch(() => {});
+  }
+}
+
+// Serve homepage
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-// Related movies
-app.get('/related/:title', (req, res) => {
-  const title = req.params.title?.toLowerCase();
-  const baseMovie = movies.find(m => m.title.toLowerCase() === title);
-  if (!baseMovie) return res.status(404).json({ error: "Movie not found" });
-
-  const byDirector = movies.filter(m => m.title.toLowerCase() !== title && m.director === baseMovie.director);
-  const byGenre = movies.filter(m => m.title.toLowerCase() !== title && m.genre === baseMovie.genre);
-
-  res.json({ byDirector, byGenre });
+// Get all movies
+app.get("/all", async (req, res) => {
+  const cursor = await watchme.query(aql`FOR m IN Movies RETURN m`);
+  const all = await cursor.all();
+  res.json(all);
 });
 
-// All movies (for landing/home page)
-app.get('/all', (req, res) => {
-  res.json(movies);
+// Get movie + related
+app.get("/related/:title", async (req, res) => {
+  const titleKey = req.params.title.replace(/\s+/g, "_");
+  const query = aql`
+    LET mainMovie = DOCUMENT(CONCAT("Movies/", ${titleKey}))
+    LET directorMovies = (
+      FOR d IN INBOUND CONCAT("Movies/", ${titleKey}) DIRECTED
+        FOR m IN OUTBOUND d DIRECTED
+        FILTER m._key != ${titleKey}
+        RETURN DISTINCT m
+    )
+    LET genreMovies = (
+      FOR g IN OUTBOUND CONCAT("Movies/", ${titleKey}) BELONGS_TO
+        FOR m IN INBOUND g BELONGS_TO
+        FILTER m._key != ${titleKey}
+        RETURN DISTINCT m
+    )
+    RETURN { main: mainMovie, byDirector: directorMovies, byGenre: genreMovies }
+  `;
+  const cursor = await watchme.query(query);
+  const result = await cursor.next();
+  res.json(result);
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+const PORT = 3000;
+app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
