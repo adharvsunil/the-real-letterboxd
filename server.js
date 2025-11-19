@@ -19,9 +19,12 @@ app.use(express.static(path.join(__dirname, "public")));
 // Database
 // ----------------------
 const db = new Database({
-  url: "https://57f7022a960c.arangodb.cloud:8529",
-  databaseName: "watchme",
-  auth: { username: "root", password: "C067fwW8SNHSnuiECa9C" },
+  url: process.env.ARANGO_URL,
+  databaseName: process.env.ARANGO_DB,
+  auth: {
+    username: process.env.ARANGO_USER,
+    password: process.env.ARANGO_PASS
+  }
 });
 
 // Collections
