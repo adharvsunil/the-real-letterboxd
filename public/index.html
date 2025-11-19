@@ -5,34 +5,122 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Movie Graph Explorer</title>
 <style>
-  body { font-family: Arial; margin: 0; background:#121212; color:#eee;}
-  header { background:#1f1f1f; padding:1rem; text-align:center; font-size:1.5rem;}
-  .movies-row { display:flex; flex-wrap:wrap; justify-content:center; margin:1rem; gap:1rem;}
-  .movie-card { background:#242424; width:180px; cursor:pointer; overflow:hidden; border-radius:10px; transition:transform 0.2s;}
-  .movie-card:hover { transform:scale(1.05); background:#333;}
-  .movie-card img { width:100%; border-bottom:1px solid #444;}
-  .movie-card h3 { margin:0.5rem; font-size:1rem;}
-  .movie-card p { margin:0.2rem 0.5rem 0.5rem 0.5rem; font-size:0.85rem; color:#aaa;}
-  .main-movie { text-align:center; margin:2rem auto; max-width:400px; padding:1rem; background:#1f1f1f; border-radius:10px;}
-  .main-movie img { width:100%; border-radius:10px;}
-  .section-title { text-align:center; margin:1.5rem 0 0.5rem 0; font-size:1.2rem; color:#fff;}
-  .home-btn { display:block; margin:1rem auto; padding:0.5rem 1rem; background:#333; color:#fff; border:none; border-radius:5px; cursor:pointer;}
-  .home-btn:hover { background:#555;}
+  /* ----------------- BODY & GENERAL ----------------- */
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #141414; /* Letterboxd dark bg */
+    color: #fff;
+  }
+
+  header {
+    background: #1b1b1b;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.5rem;
+    color: #fff;
+  }
+
+  .movies-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 1rem;
+    gap: 1rem;
+  }
+
+  .movie-card {
+    background: #1f1f1f; /* Letterboxd-style card bg */
+    width: 180px;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 6px;
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .movie-card:hover {
+    transform: scale(1.05);
+    background: #2a2a2a;
+  }
+
+  .movie-card img {
+    width: 100%;
+    border-bottom: 1px solid #333;
+  }
+
+  .movie-card h3 {
+    margin: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .movie-card p {
+    margin: 0.2rem 0.5rem 0.5rem 0.5rem;
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+
+  .main-movie {
+    text-align: center;
+    margin: 2rem auto;
+    max-width: 400px;
+    padding: 1rem;
+    background: #1b1b1b;
+    border-radius: 8px;
+  }
+
+  .main-movie img {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .section-title {
+    text-align: left;
+    margin: 1rem 1rem 0.5rem 1rem;
+    font-size: 1.2rem;
+    color: #ffb400; /* Letterboxd orange accent */
+    display: none; /* hidden on homepage */
+  }
+
+  .home-btn {
+    display: block;
+    margin: 1rem auto;
+    padding: 0.5rem 1rem;
+    background: #2a2a2a;
+    color: #ffb400; /* Letterboxd accent */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .home-btn:hover {
+    background: #3a3a3a;
+  }
+
+  #authBox {
+    text-align: center;
+    margin: 1rem;
+  }
+
+  #authBox input {
+    padding: 5px;
+  }
+
+  #authBox button {
+    padding: 6px 12px;
+  }
 </style>
 </head>
 <body>
 
-<header>🎬 Movie Graph Explorer</header>
+<header>🎬 Movie Log</header>
 
 <!-- 🔥 LOGIN + REGISTER BOX -->
-<div id="authBox" style="text-align:center; margin:1rem;">
+<div id="authBox">
   <h2>Login / Register</h2>
-  <input id="username" placeholder="Username" style="padding:5px;"><br><br>
-  <input id="password" type="password" placeholder="Password" style="padding:5px;"><br><br>
-
-  <button onclick="register()" style="padding:6px 12px;">Register</button>
-  <button onclick="login()" style="padding:6px 12px;">Login</button>
-
+  <input id="username" placeholder="Username"><br><br>
+  <input id="password" type="password" placeholder="Password"><br><br>
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
   <p id="authMsg"></p>
 </div>
 
@@ -41,16 +129,14 @@
 <section id="movieList" class="movies-row"></section>
 <section id="mainMovie" class="main-movie"></section>
 
-<h2 class="section-title">Movies by Same Director</h2>
+<h2 id="directorTitle" class="section-title">Movies by Same Director</h2>
 <section id="directorMovies" class="movies-row"></section>
 
-<h2 class="section-title">Movies of Same Genre</h2>
+<h2 id="genreTitle" class="section-title">Movies of Same Genre</h2>
 <section id="genreMovies" class="movies-row"></section>
 
 <script>
-/* ---------------------------
-    LOAD ALL MOVIES ON HOME
----------------------------- */
+/* --------------------------- LOAD ALL MOVIES ON HOME ---------------------------- */
 async function loadMovies() {
   const res = await fetch("/movies");
   const movies = await res.json();
@@ -61,25 +147,24 @@ async function loadMovies() {
   document.getElementById("directorMovies").innerHTML = "";
   document.getElementById("genreMovies").innerHTML = "";
 
+  // Hide related sections on homepage
+  document.getElementById("directorTitle").style.display = "none";
+  document.getElementById("genreTitle").style.display = "none";
+
   movies.forEach(m => {
     const card = document.createElement("div");
     card.className = "movie-card";
-
     card.innerHTML = `
       <img src="${m.poster}" alt="${m.title}">
       <h3>${m.title}</h3>
       <p>${m.director}</p>
     `;
-
     card.onclick = () => selectMovie(m._key);
-
     list.appendChild(card);
   });
 }
 
-/* ---------------------------
-    LOAD SELECTED MOVIE
----------------------------- */
+/* --------------------------- LOAD SELECTED MOVIE ---------------------------- */
 async function selectMovie(key) {
   const res = await fetch(`/related/${encodeURIComponent(key)}`);
   const data = await res.json();
@@ -95,6 +180,10 @@ async function selectMovie(key) {
     <p>Director: ${data.main.director}</p>
     <p>Genre: ${data.main.genre}</p>
   `;
+
+  // Show related sections now
+  document.getElementById("directorTitle").style.display = "block";
+  document.getElementById("genreTitle").style.display = "block";
 
   data.byDirector.forEach(m => {
     const card = document.createElement("div");
@@ -121,14 +210,12 @@ async function selectMovie(key) {
   });
 }
 
-/* ---------------------------
-    GO BACK TO HOME
----------------------------- */
-function showHome() { loadMovies(); }
+/* --------------------------- GO BACK TO HOME ---------------------------- */
+function showHome() {
+  loadMovies();
+}
 
-/* ---------------------------
-   🔐 REGISTER USER
----------------------------- */
+/* --------------------------- 🔐 REGISTER USER ---------------------------- */
 async function register() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
@@ -140,13 +227,10 @@ async function register() {
   });
 
   const data = await res.json();
-  document.getElementById("authMsg").innerText =
-    data.error || "Account created!";
+  document.getElementById("authMsg").innerText = data.error || "Account created!";
 }
 
-/* ---------------------------
-   🔑 LOGIN USER
----------------------------- */
+/* --------------------------- 🔑 LOGIN USER ---------------------------- */
 async function login() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
@@ -164,33 +248,25 @@ async function login() {
     return;
   }
 
-  // ✅ LOGIN SUCCESS
   document.getElementById("authBox").style.display = "none";
 
-  // Show welcome + logout
   const header = document.querySelector("header");
   header.innerHTML = `🎬 Movie Graph Explorer - Welcome, ${data.username} 
     <button onclick="logout()" style="margin-left:1rem;padding:4px 8px;">Log Out</button>`;
 
-  loadMovies(); // reload movies after login
-}
-//Log out
-function logout() {
-  // Show login box again
-  document.getElementById("authBox").style.display = "block";
-
-  // Reset header
-  document.querySelector("header").innerText = "🎬 Movie Graph Explorer";
-
-  // Clear username/password fields and message
-  document.getElementById("username").value = "";
-  document.getElementById("password").value = "";
-  document.getElementById("authMsg").innerText = "";
-
   loadMovies();
 }
 
+function logout() {
+  document.getElementById("authBox").style.display = "block";
+  document.querySelector("header").innerText = "🎬 Movie Graph Explorer";
+  document.getElementById("username").value = "";
+  document.getElementById("password").value = "";
+  document.getElementById("authMsg").innerText = "";
+  loadMovies();
+}
 
+// Initial load
 loadMovies();
 </script>
 </body>
