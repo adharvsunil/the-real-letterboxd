@@ -138,41 +138,53 @@ app.get("/movies", async (req, res) => {
   }
 });
 
-app.get("/related/:title", async (req, res) => {
+app.get("/related/:key", async (req, res) => {
   try {
-    const titleKey = req.params.title;
+    const movieKey = req.params.key;
 
     const result = await db.query(aql`
       WITH Movies, Directors, Genres
-      LET mainMovie = FIRST(FOR m IN Movies FILTER m.title == ${titleKey} RETURN m)
+
+      LET mainMovie = DOCUMENT(CONCAT("Movies/", ${movieKey}))
 
       LET directorMovies = (
-        FOR v, e IN 1..1 INBOUND mainMovie DIRECTED
-          FOR m IN OUTBOUND v DIRECTED
-            FILTER m.title != ${titleKey}
+        LET d = FIRST(
+          FOR v, e IN 1..1 INBOUND mainMovie DIRECTED
+            RETURN v
+        )
+        RETURN (
+          FOR m IN OUTBOUND d DIRECTED
+            FILTER m._key != ${movieKey}
             RETURN DISTINCT m
+        )
       )
 
       LET genreMovies = (
-        FOR v, e IN 1..1 OUTBOUND mainMovie BELONGS_TO
-          FOR m IN INBOUND v BELONGS_TO
-            FILTER m.title != ${titleKey}
+        LET g = FIRST(
+          FOR v, e IN 1..1 OUTBOUND mainMovie BELONGS_TO
+            RETURN v
+        )
+        RETURN (
+          FOR m IN INBOUND g BELONGS_TO
+            FILTER m._key != ${movieKey}
             RETURN DISTINCT m
+        )
       )
 
       RETURN {
         main: mainMovie,
-        byDirector: directorMovies,
-        byGenre: genreMovies
+        byDirector: directorMovies[0],
+        byGenre: genreMovies[0]
       }
     `).then(c => c.next());
 
     res.json(result);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to load movie." });
+    console.error("🔥 AQL ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 // ----------------------
 // Start server
