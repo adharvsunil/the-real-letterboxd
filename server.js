@@ -2,6 +2,7 @@ import express from "express";
 import { Database, aql } from "arangojs";
 import path from "path";
 import { fileURLToPath } from "url";
+import bcrypt from "bcrypt";
 
 // ----------------------
 // Setup
@@ -45,7 +46,8 @@ function slug(str) {
 // ----------------------
 async function seedDatabase() {
   try {
-    // Create collections if not exist
+    const Users = db.collection("Users");
+    if (!(await Users.exists())) await Users.create();
     if (!(await Movies.exists())) await Movies.create();
     if (!(await Directors.exists())) await Directors.create();
     if (!(await Genres.exists())) await Genres.create();
@@ -129,6 +131,62 @@ async function seedDatabase() {
 // ----------------------
 // API Routes
 // ----------------------
+
+// REGISTER (auto-login)
+app.post("/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password)
+      return res.status(400).json({ error: "Missing fields" });
+
+    const cursor = await db.query(aql`
+      FOR u IN Users
+        FILTER u.username == ${username}
+        RETURN u
+    `);
+    const existingUser = await cursor.next();
+    if (existingUser) return res.status(400).json({ error: "User already exists" });
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const newUser = await db.query(aql`
+      INSERT { _key: ${username.toLowerCase()}, username: ${username}, password: ${hash} }
+      INTO Users
+      RETURN NEW
+    `).then(c => c.next());
+
+    // Auto-login response
+    res.json({ username: newUser.username });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// LOGIN
+app.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password)
+      return res.status(400).json({ error: "Missing fields" });
+
+    const cursor = await db.query(aql`
+      FOR u IN Users
+        FILTER u.username == ${username}
+        RETURN u
+    `);
+    const user = await cursor.next();
+    if (!user) return res.status(400).json({ error: "User not found" });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ error: "Incorrect password" });
+
+    res.json({ username: user.username });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET ALL MOVIES
 app.get("/movies", async (req, res) => {
   try {
     const cursor = await db.query(aql`FOR m IN Movies RETURN m`);
@@ -138,10 +196,10 @@ app.get("/movies", async (req, res) => {
   }
 });
 
+// GET RELATED MOVIES
 app.get("/related/:key", async (req, res) => {
   try {
     const movieKey = req.params.key;
-
     const result = await db.query(aql`
       WITH Movies, Directors, Genres
 
@@ -184,7 +242,6 @@ app.get("/related/:key", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ----------------------
 // Start server

@@ -21,14 +21,29 @@
 </style>
 </head>
 <body>
+
 <header>🎬 Movie Graph Explorer</header>
+
+<!-- 🔥 LOGIN + REGISTER BOX -->
+<div id="authBox" style="text-align:center; margin:1rem;">
+  <h2>Login / Register</h2>
+  <input id="username" placeholder="Username" style="padding:5px;"><br><br>
+  <input id="password" type="password" placeholder="Password" style="padding:5px;"><br><br>
+
+  <button onclick="register()" style="padding:6px 12px;">Register</button>
+  <button onclick="login()" style="padding:6px 12px;">Login</button>
+
+  <p id="authMsg"></p>
+</div>
 
 <button class="home-btn" onclick="showHome()">🏠 Home</button>
 
 <section id="movieList" class="movies-row"></section>
 <section id="mainMovie" class="main-movie"></section>
+
 <h2 class="section-title">Movies by Same Director</h2>
 <section id="directorMovies" class="movies-row"></section>
+
 <h2 class="section-title">Movies of Same Genre</h2>
 <section id="genreMovies" class="movies-row"></section>
 
@@ -56,7 +71,7 @@ async function loadMovies() {
       <p>${m.director}</p>
     `;
 
-    card.onclick = () => selectMovie(m._key);  // 🔥 USE _key FOR ROUTING
+    card.onclick = () => selectMovie(m._key);
 
     list.appendChild(card);
   });
@@ -81,7 +96,6 @@ async function selectMovie(key) {
     <p>Genre: ${data.main.genre}</p>
   `;
 
-  /* Movies by Director */
   data.byDirector.forEach(m => {
     const card = document.createElement("div");
     card.className = "movie-card";
@@ -94,7 +108,6 @@ async function selectMovie(key) {
     document.getElementById("directorMovies").appendChild(card);
   });
 
-  /* Movies by Genre */
   data.byGenre.forEach(m => {
     const card = document.createElement("div");
     card.className = "movie-card";
@@ -111,9 +124,72 @@ async function selectMovie(key) {
 /* ---------------------------
     GO BACK TO HOME
 ---------------------------- */
-function showHome() {
+function showHome() { loadMovies(); }
+
+/* ---------------------------
+   🔐 REGISTER USER
+---------------------------- */
+async function register() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+  document.getElementById("authMsg").innerText =
+    data.error || "Account created!";
+}
+
+/* ---------------------------
+   🔑 LOGIN USER
+---------------------------- */
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+
+  if (data.error) {
+    document.getElementById("authMsg").innerText = data.error;
+    return;
+  }
+
+  // ✅ LOGIN SUCCESS
+  document.getElementById("authBox").style.display = "none";
+
+  // Show welcome + logout
+  const header = document.querySelector("header");
+  header.innerHTML = `🎬 Movie Graph Explorer - Welcome, ${data.username} 
+    <button onclick="logout()" style="margin-left:1rem;padding:4px 8px;">Log Out</button>`;
+
+  loadMovies(); // reload movies after login
+}
+//Log out
+function logout() {
+  // Show login box again
+  document.getElementById("authBox").style.display = "block";
+
+  // Reset header
+  document.querySelector("header").innerText = "🎬 Movie Graph Explorer";
+
+  // Clear username/password fields and message
+  document.getElementById("username").value = "";
+  document.getElementById("password").value = "";
+  document.getElementById("authMsg").innerText = "";
+
   loadMovies();
 }
+
 
 loadMovies();
 </script>
