@@ -19,12 +19,9 @@ app.use(express.static(path.join(__dirname, "public")));
 // Database
 // ----------------------
 const db = new Database({
-  url: process.env.ARANGO_URL,
-  databaseName: process.env.ARANGO_DB,
-  auth: {
-    username: process.env.ARANGO_USER,
-    password: process.env.ARANGO_PASS
-  }
+  url: "https://57f7022a960c.arangodb.cloud:8529",
+  databaseName: "watchme",
+  auth: { username: "root", password: "C067fwW8SNHSnuiECa9C" },
 });
 
 // Collections
@@ -69,7 +66,7 @@ async function seedDatabase() {
       { title: "The Godfather", director: "Francis Ford Coppola", genre: "Crime", poster:"https://a.ltrbxd.com/resized/film-poster/5/1/8/1/8/51818-the-godfather-0-2000-0-3000-crop.jpg?v=bca8b67402" },
       { title: "The Shawshank Redemption", director: "Frank Darabont", genre: "Drama", poster:"https://a.ltrbxd.com/resized/sm/upload/7l/hn/46/uz/zGINvGjdlO6TJRu9wESQvWlOKVT-0-2000-0-3000-crop.jpg?v=8736d1c395" },
       { title: "Forrest Gump", director: "Robert Zemeckis", genre: "Drama", poster:"https://a.ltrbxd.com/resized/film-poster/2/7/0/4/2704-forrest-gump-0-2000-0-3000-crop.jpg?v=173bc04cf0" },
-      { title: "The Matrix Resurrections", director: "The Wachowskis", genre: "Sci-Fi", poster:"https://a.ltrbxd.com/resized/film-poster/5/5/1/2/7/5/551275-the-matrix-resurrections-0-2000-0-3000-crop.jpg?v=dcca87ec62" }
+      { title: "The Matrix Resurrections", director: "The Wachowskis", genre: "Action", poster:"https://a.ltrbxd.com/resized/film-poster/5/5/1/2/7/5/551275-the-matrix-resurrections-0-2000-0-3000-crop.jpg?v=dcca87ec62" }
     ];
 
     for (const movie of movies) {
