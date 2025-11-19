@@ -34,63 +34,58 @@
 
 <script>
 async function loadMovies() {
-  const res = await fetch("/all");
+  const res = await fetch("/movies");
   const movies = await res.json();
   const list = document.getElementById("movieList");
   list.innerHTML = "";
+
   movies.forEach(m => {
     const card = document.createElement("div");
     card.className = "movie-card";
     card.innerHTML = `<img src="${m.poster}" alt="${m.title}"><h3>${m.title}</h3><p>${m.director}</p>`;
-    card.onclick = () => selectMovie(m._key);
+    card.onclick = () => selectMovie(m.title);
     list.appendChild(card);
   });
-  // Hide main & related on home
+
   document.getElementById("mainMovie").innerHTML = "";
   document.getElementById("directorMovies").innerHTML = "";
   document.getElementById("genreMovies").innerHTML = "";
 }
-async function selectMovie(titleKey) {
-  const res = await fetch(`/related/${encodeURIComponent(titleKey)}`);
+
+async function selectMovie(title) {
+  const res = await fetch(`/related/${encodeURIComponent(title)}`);
   const data = await res.json();
 
-  // Hide home movies
   document.getElementById("movieList").innerHTML = "";
+  document.getElementById("directorMovies").innerHTML = "";
+  document.getElementById("genreMovies").innerHTML = "";
 
-  // Show main movie
   const main = document.getElementById("mainMovie");
-  main.innerHTML = `<img src="${data.main.poster}" alt="${data.main.title}">
+  main.innerHTML = `
+    <img src="${data.main.poster}" alt="${data.main.title}">
     <h2>${data.main.title}</h2>
     <p>Director: ${data.main.director}</p>
-    <p>Genre: ${data.main.genre}</p>`;
+    <p>Genre: ${data.main.genre}</p>
+  `;
 
-  // Related by director
-  const dirSection = document.getElementById("directorMovies");
-  dirSection.innerHTML = "";
   data.byDirector.forEach(m => {
     const card = document.createElement("div");
     card.className = "movie-card";
-    card.innerHTML = `<img src="${m.poster}" alt="${m.title}"><h3>${m.title}</h3><p>${m.director}</p>`;
-    card.onclick = () => selectMovie(m._key);
-    dirSection.appendChild(card);
+    card.innerHTML = `<img src="${m.poster}"><h3>${m.title}</h3><p>${m.director}</p>`;
+    card.onclick = () => selectMovie(m.title);
+    document.getElementById("directorMovies").appendChild(card);
   });
 
-  // Related by genre
-  const genreSection = document.getElementById("genreMovies");
-  genreSection.innerHTML = "";
   data.byGenre.forEach(m => {
     const card = document.createElement("div");
     card.className = "movie-card";
-    card.innerHTML = `<img src="${m.poster}" alt="${m.title}"><h3>${m.title}</h3><p>${m.director}</p>`;
-    card.onclick = () => selectMovie(m._key);
-    genreSection.appendChild(card);
+    card.innerHTML = `<img src="${m.poster}"><h3>${m.title}</h3><p>${m.director}</p>`;
+    card.onclick = () => selectMovie(m.title);
+    document.getElementById("genreMovies").appendChild(card);
   });
 }
 
-// Home button
 function showHome() { loadMovies(); }
-
-// Initial load
 loadMovies();
 </script>
 </body>
