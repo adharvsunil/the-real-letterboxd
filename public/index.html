@@ -5,119 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Movie Graph Explorer</title>
 <style>
-  /* ----------------- BODY & GENERAL ----------------- */
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #141414; /* Letterboxd dark bg */
-    color: #fff;
-  }
-
-  header {
-    background: #1b1b1b;
-    padding: 1rem;
-    text-align: center;
-    font-size: 1.5rem;
-    color: #fff;
-  }
-
-  .movies-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: 1rem;
-    gap: 1rem;
-  }
-
-  .movie-card {
-    background: #1f1f1f; /* Letterboxd-style card bg */
-    width: 180px;
-    cursor: pointer;
-    overflow: hidden;
-    border-radius: 6px;
-    transition: transform 0.2s, background 0.2s;
-  }
-
-  .movie-card:hover {
-    transform: scale(1.05);
-    background: #2a2a2a;
-  }
-
-  .movie-card img {
-    width: 100%;
-    border-bottom: 1px solid #333;
-  }
-
-  .movie-card h3 {
-    margin: 0.5rem;
-    font-size: 1rem;
-  }
-
-  .movie-card p {
-    margin: 0.2rem 0.5rem 0.5rem 0.5rem;
-    font-size: 0.85rem;
-    color: #aaa;
-  }
-
-  .main-movie {
-    text-align: center;
-    margin: 2rem auto;
-    max-width: 400px;
-    padding: 1rem;
-    background: #1b1b1b;
-    border-radius: 8px;
-  }
-
-  .main-movie img {
-    width: 100%;
-    border-radius: 8px;
-  }
-
-  .section-title {
-    text-align: left;
-    margin: 1rem 1rem 0.5rem 1rem;
-    font-size: 1.2rem;
-    color: #ffb400; /* Letterboxd orange accent */
-    display: none; /* hidden on homepage */
-  }
-
-  .home-btn {
-    display: block;
-    margin: 1rem auto;
-    padding: 0.5rem 1rem;
-    background: #2a2a2a;
-    color: #ffb400; /* Letterboxd accent */
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-  .home-btn:hover {
-    background: #3a3a3a;
-  }
-
-  #authBox {
-    text-align: center;
-    margin: 1rem;
-  }
-
-  #authBox input {
-    padding: 5px;
-  }
-
-  #authBox button {
-    padding: 6px 12px;
-  }
+  body { font-family: Arial, sans-serif; margin:0; background:#121212; color:#eee; }
+  header { background:#1f1f1f; padding:1rem; text-align:center; font-size:1.5rem; color:#40BCF4; display:flex; justify-content:space-between; align-items:center; }
+  header span#wishlistCount { cursor:pointer; color:#00E054; font-weight:bold; }
+  .home-btn { background:#FF8000; color:#121212; border:none; border-radius:5px; cursor:pointer; padding:6px 12px; margin:0 auto; display:block; font-weight:bold; }
+  .home-btn:hover { background:#FFA347; }
+  .movies-row { display:flex; flex-wrap:wrap; justify-content:center; margin:1rem; gap:1rem; }
+  .movie-card { background:#242424; width:180px; cursor:pointer; overflow:hidden; border-radius:10px; transition:transform 0.2s, box-shadow 0.2s; position:relative; }
+  .movie-card:hover { transform:scale(1.05); box-shadow:0 0 12px #00E054; }
+  .movie-card img { width:100%; border-bottom:1px solid #444; }
+  .movie-card h3 { margin:0.5rem; font-size:1rem; color:#40BCF4; text-align:center;}
+  .movie-card p { margin:0.2rem 0.5rem 0.5rem 0.5rem; font-size:0.85rem; color:#FF8000; text-align:center;}
+  .wishlist-btn { position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); border:none; color:#FF8000; padding:4px 6px; border-radius:4px; cursor:pointer; font-weight:bold; }
+  .main-movie { text-align:center; margin:2rem auto; max-width:600px; padding:1rem; background:#1f1f1f; border-radius:10px; display:none; }
+  .main-movie img { width:100%; border-radius:10px; }
+  #wishlistBtn, #logoutBtn { background:#00E054; color:#121212; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; margin:1rem auto; display:none; font-weight:bold; }
+  #authBox { text-align:center; margin:1rem; }
+  #authBox input { padding:5px; margin:5px 0; border-radius:4px; border:1px solid #40BCF4; background:#121212; color:#eee; }
+  #authBox button { padding:6px 12px; margin:0 5px; background:#FF8000; color:#121212; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
+  #authMsg { color:#FF8000; margin-top:0.5rem; }
+  h3.section-title { color:#40BCF4; margin-top:1rem; }
 </style>
 </head>
 <body>
 
-<header>🎬 Movie Log</header>
+<header>
+  <span>🎬 Movie Graph Explorer</span>
+  <span id="wishlistCount" onclick="showWishlist()"></span>
+</header>
 
-<!-- 🔥 LOGIN + REGISTER BOX -->
 <div id="authBox">
   <h2>Login / Register</h2>
-  <input id="username" placeholder="Username"><br><br>
+  <input id="username" placeholder="Username"><br>
   <input id="password" type="password" placeholder="Password"><br><br>
   <button onclick="register()">Register</button>
   <button onclick="login()">Login</button>
@@ -125,148 +44,187 @@
 </div>
 
 <button class="home-btn" onclick="showHome()">🏠 Home</button>
+<button id="wishlistBtn" onclick="showWishlist()">💚 My Wishlist</button>
+<button id="logoutBtn" onclick="logout()">🚪 Logout</button>
 
 <section id="movieList" class="movies-row"></section>
 <section id="mainMovie" class="main-movie"></section>
 
-<h2 id="directorTitle" class="section-title">Movies by Same Director</h2>
-<section id="directorMovies" class="movies-row"></section>
-
-<h2 id="genreTitle" class="section-title">Movies of Same Genre</h2>
-<section id="genreMovies" class="movies-row"></section>
-
 <script>
-/* --------------------------- LOAD ALL MOVIES ON HOME ---------------------------- */
+let currentUser = null;
+let wishlist = [];
+let keyToMovie = {};
+let lastMovieKey = null;
+
+function createMovieCard(m) {
+  keyToMovie[m._key] = m;
+
+  const card = document.createElement("div");
+  card.className = "movie-card";
+  card.innerHTML = `
+    <img src="${m.poster}" alt="${m.title}">
+    <h3>${m.title}</h3>
+    <p>${m.director}</p>
+  `;
+  card.onclick = () => selectMovie(m._key);
+
+  if (currentUser) {
+    const btn = document.createElement("button");
+    btn.className = "wishlist-btn";
+    btn.innerText = wishlist.includes(m._key.toString()) ? "- Remove from Watchlist" : "+ Add to Watchlist";
+    btn.onclick = e => { 
+      e.stopPropagation(); 
+      toggleWishlist(m._key, btn); 
+    };
+    card.appendChild(btn);
+  }
+
+  return card;
+}
+
 async function loadMovies() {
   const res = await fetch("/movies");
   const movies = await res.json();
   const list = document.getElementById("movieList");
-
   list.innerHTML = "";
-  document.getElementById("mainMovie").innerHTML = "";
-  document.getElementById("directorMovies").innerHTML = "";
-  document.getElementById("genreMovies").innerHTML = "";
-
-  // Hide related sections on homepage
-  document.getElementById("directorTitle").style.display = "none";
-  document.getElementById("genreTitle").style.display = "none";
-
-  movies.forEach(m => {
-    const card = document.createElement("div");
-    card.className = "movie-card";
-    card.innerHTML = `
-      <img src="${m.poster}" alt="${m.title}">
-      <h3>${m.title}</h3>
-      <p>${m.director}</p>
-    `;
-    card.onclick = () => selectMovie(m._key);
-    list.appendChild(card);
-  });
+  document.getElementById("mainMovie").style.display = "none";
+  keyToMovie = {};
+  movies.forEach(m => list.appendChild(createMovieCard(m)));
 }
 
-/* --------------------------- LOAD SELECTED MOVIE ---------------------------- */
 async function selectMovie(key) {
+  lastMovieKey = key;
   const res = await fetch(`/related/${encodeURIComponent(key)}`);
   const data = await res.json();
 
   document.getElementById("movieList").innerHTML = "";
-  document.getElementById("directorMovies").innerHTML = "";
-  document.getElementById("genreMovies").innerHTML = "";
-
   const main = document.getElementById("mainMovie");
+  main.style.display = "block";
+
+  [...data.byDirector, ...data.byGenre].forEach(m => keyToMovie[m._key] = m);
+
   main.innerHTML = `
-    <img src="${data.main.poster}" alt="${data.main.title}">
-    <h2>${data.main.title}</h2>
-    <p>Director: ${data.main.director}</p>
-    <p>Genre: ${data.main.genre}</p>
+    <div style="position: relative;">
+      <img src="${data.main.poster}" alt="${data.main.title}" style="width:100%; border-radius:10px;">
+      <h2 style="margin-top:0.5rem;">${data.main.title}</h2>
+      <p>Director: ${data.main.director}</p>
+      <p>Genre: ${data.main.genre}</p>
+    </div>
+    <h3 class="section-title">More by this Director</h3>
+    <div class="movies-row" id="directorRow"></div>
+    <h3 class="section-title">More in this Genre</h3>
+    <div class="movies-row" id="genreRow"></div>
   `;
 
-  // Show related sections now
-  document.getElementById("directorTitle").style.display = "block";
-  document.getElementById("genreTitle").style.display = "block";
+  if (currentUser) {
+    const imgContainer = main.querySelector("div");
+    const btn = document.createElement("button");
+    btn.className = "wishlist-btn";
+    btn.style.position = "absolute";
+    btn.style.top = "8px";
+    btn.style.right = "8px";
+   btn.innerText = wishlist.includes(key.toString()) ? "- Remove from Watchlist" : "+ Add to Watchlist";
 
-  data.byDirector.forEach(m => {
-    const card = document.createElement("div");
-    card.className = "movie-card";
-    card.innerHTML = `
-      <img src="${m.poster}">
-      <h3>${m.title}</h3>
-      <p>${m.director}</p>
-    `;
-    card.onclick = () => selectMovie(m._key);
-    document.getElementById("directorMovies").appendChild(card);
-  });
+    btn.onclick = e => {
+      e.stopPropagation();
+      toggleWishlist(key, btn);
+    };
+    imgContainer.appendChild(btn);
+  }
 
-  data.byGenre.forEach(m => {
-    const card = document.createElement("div");
-    card.className = "movie-card";
-    card.innerHTML = `
-      <img src="${m.poster}">
-      <h3>${m.title}</h3>
-      <p>${m.director}</p>
-    `;
-    card.onclick = () => selectMovie(m._key);
-    document.getElementById("genreMovies").appendChild(card);
-  });
+  const dirRow = document.getElementById("directorRow");
+  data.byDirector.forEach(m => dirRow.appendChild(createMovieCard(m)));
+
+  const genRow = document.getElementById("genreRow");
+  data.byGenre.forEach(m => genRow.appendChild(createMovieCard(m)));
 }
 
-/* --------------------------- GO BACK TO HOME ---------------------------- */
-function showHome() {
-  loadMovies();
+async function toggleWishlist(movieKey, btn) {
+  try {
+    const res = await fetch(`/wishlist/${encodeURIComponent(currentUser)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ movieKey })
+    });
+    const data = await res.json();
+    wishlist = data.wishlist || [];
+    btn.innerText = wishlist.includes(movieKey.toString()) ? "- Remove from Watchlist" : "+ Add to Watchlist";
+
+    updateWishlistCount();
+  } catch (err) {
+    alert("Error updating wishlist");
+    console.error(err);
+  }
 }
 
-/* --------------------------- 🔐 REGISTER USER ---------------------------- */
+async function showWishlist() {
+  if (!currentUser) return;
+  const res = await fetch(`/wishlist/${encodeURIComponent(currentUser)}`);
+  const movies = await res.json();
+  const list = document.getElementById("movieList");
+  list.innerHTML = "";
+  document.getElementById("mainMovie").style.display = "none";
+  movies.forEach(m => list.appendChild(createMovieCard(m)));
+}
+
+function updateWishlistCount() {
+  document.getElementById("wishlistCount").innerText = wishlist.length ? `💚 ${wishlist.length}` : "";
+}
+
 async function register() {
-  const username = document.getElementById("username").value;
+  const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
-
   const res = await fetch("/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username,password})
   });
-
   const data = await res.json();
   document.getElementById("authMsg").innerText = data.error || "Account created!";
 }
 
-/* --------------------------- 🔑 LOGIN USER ---------------------------- */
 async function login() {
-  const username = document.getElementById("username").value;
+  const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
-
   const res = await fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username,password})
   });
-
   const data = await res.json();
+  if(data.error){ document.getElementById("authMsg").innerText = data.error; return; }
 
-  if (data.error) {
-    document.getElementById("authMsg").innerText = data.error;
-    return;
+  currentUser = data.username.toLowerCase();
+  document.getElementById("authBox").style.display="none";
+  document.getElementById("wishlistBtn").style.display="block";
+  document.getElementById("logoutBtn").style.display="block";
+
+  const wlRes = await fetch(`/wishlist/${encodeURIComponent(currentUser)}`);
+  wishlist = (await wlRes.json()).map(m => m._key.toString());
+  updateWishlistCount();
+
+  if(lastMovieKey){
+    selectMovie(lastMovieKey);
+  } else {
+    loadMovies();
   }
-
-  document.getElementById("authBox").style.display = "none";
-
-  const header = document.querySelector("header");
-  header.innerHTML = `🎬 Movie Graph Explorer - Welcome, ${data.username} 
-    <button onclick="logout()" style="margin-left:1rem;padding:4px 8px;">Log Out</button>`;
-
-  loadMovies();
 }
 
 function logout() {
-  document.getElementById("authBox").style.display = "block";
-  document.querySelector("header").innerText = "🎬 Movie Graph Explorer";
-  document.getElementById("username").value = "";
-  document.getElementById("password").value = "";
-  document.getElementById("authMsg").innerText = "";
+  currentUser = null;
+  wishlist = [];
+  document.getElementById("authBox").style.display="block";
+  document.getElementById("wishlistBtn").style.display="none";
+  document.getElementById("logoutBtn").style.display="none";
+  document.getElementById("username").value="";
+  document.getElementById("password").value="";
+  document.getElementById("authMsg").innerText="";
+  updateWishlistCount();
   loadMovies();
 }
 
-// Initial load
+function showHome() { loadMovies(); }
+
 loadMovies();
 </script>
 </body>

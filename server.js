@@ -12,8 +12,6 @@ app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Serve frontend
 app.use(express.static(path.join(__dirname, "public")));
 
 // ----------------------
@@ -25,17 +23,14 @@ const db = new Database({
   auth: { username: "root", password: "C067fwW8SNHSnuiECa9C" },
 });
 
-// Collections
 const Movies = db.collection("Movies");
 const Directors = db.collection("Directors");
 const Genres = db.collection("Genres");
-
-// Edge collections
 const DIRECTED = db.collection("DIRECTED");
 const BELONGS_TO = db.collection("BELONGS_TO");
 
 // ----------------------
-// Utility: slug function
+// Utility
 // ----------------------
 function slug(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -64,15 +59,10 @@ async function seedDatabase() {
       { title: "Kill Bill Vol.1", director: "Quentin Tarantino", genre: "Action", poster: "https://a.ltrbxd.com/resized/sm/upload/sw/w2/ep/v4/9O50TVszkz0dcP5g6Ej33UhR7vw-0-2000-0-3000-crop.jpg?v=5a65f5202f" },
       { title: "Inglourious Basterds", director: "Quentin Tarantino", genre: "War", poster: "https://a.ltrbxd.com/resized/film-poster/4/1/3/5/2/41352-inglourious-basterds-0-2000-0-3000-crop.jpg?v=0c74c673e0" },
       { title: "The Matrix", director: "The Wachowskis", genre: "Sci-Fi", poster: "https://a.ltrbxd.com/resized/film-poster/5/1/5/1/8/51518-the-matrix-0-2000-0-3000-crop.jpg?v=fc7c366afe" },
-      { title: "Gladiator", director: "Ridley Scott", genre: "Action", poster: "https://a.ltrbxd.com/resized/film-poster/5/1/9/5/2/51952-gladiator-2000-0-2000-0-3000-crop.jpg?v=0071a74571" },
-      { title: "The Godfather", director: "Francis Ford Coppola", genre: "Crime", poster:"https://a.ltrbxd.com/resized/film-poster/5/1/8/1/8/51818-the-godfather-0-2000-0-3000-crop.jpg?v=bca8b67402" },
-      { title: "The Shawshank Redemption", director: "Frank Darabont", genre: "Drama", poster:"https://a.ltrbxd.com/resized/sm/upload/7l/hn/46/uz/zGINvGjdlO6TJRu9wESQvWlOKVT-0-2000-0-3000-crop.jpg?v=8736d1c395" },
-      { title: "Forrest Gump", director: "Robert Zemeckis", genre: "Drama", poster:"https://a.ltrbxd.com/resized/film-poster/2/7/0/4/2704-forrest-gump-0-2000-0-3000-crop.jpg?v=173bc04cf0" },
-      { title: "The Matrix Resurrections", director: "The Wachowskis", genre: "Action", poster:"https://a.ltrbxd.com/resized/film-poster/5/5/1/2/7/5/551275-the-matrix-resurrections-0-2000-0-3000-crop.jpg?v=dcca87ec62" }
+      { title: "Gladiator", director: "Ridley Scott", genre: "Action", poster: "https://a.ltrbxd.com/resized/film-poster/5/1/9/5/2/51952-gladiator-2000-0-2000-0-3000-crop.jpg?v=0071a74571" }
     ];
 
     for (const movie of movies) {
-      // Directors
       const director = await db.query(aql`
         UPSERT { name: ${movie.director} }
         INSERT { _key: ${slug(movie.director)}, name: ${movie.director} }
@@ -81,7 +71,6 @@ async function seedDatabase() {
         RETURN NEW
       `).then(c => c.next());
 
-      // Genres
       const genre = await db.query(aql`
         UPSERT { name: ${movie.genre} }
         INSERT { _key: ${slug(movie.genre)}, name: ${movie.genre} }
@@ -90,7 +79,6 @@ async function seedDatabase() {
         RETURN NEW
       `).then(c => c.next());
 
-      // Movies
       const m = await db.query(aql`
         UPSERT { title: ${movie.title} }
         INSERT { 
@@ -105,7 +93,6 @@ async function seedDatabase() {
         RETURN NEW
       `).then(c => c.next());
 
-      // DIRECTED edge
       await db.query(aql`
         UPSERT { _from: ${director._id}, _to: ${m._id} }
         INSERT { _from: ${director._id}, _to: ${m._id} }
@@ -113,7 +100,6 @@ async function seedDatabase() {
         IN DIRECTED
       `);
 
-      // BELONGS_TO edge
       await db.query(aql`
         UPSERT { _from: ${m._id}, _to: ${genre._id} }
         INSERT { _from: ${m._id}, _to: ${genre._id} }
@@ -132,30 +118,22 @@ async function seedDatabase() {
 // API Routes
 // ----------------------
 
-// REGISTER (auto-login)
+// REGISTER
 app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password)
-      return res.status(400).json({ error: "Missing fields" });
+    if (!username || !password) return res.status(400).json({ error: "Missing fields" });
 
-    const cursor = await db.query(aql`
-      FOR u IN Users
-        FILTER u.username == ${username}
-        RETURN u
-    `);
-    const existingUser = await cursor.next();
-    if (existingUser) return res.status(400).json({ error: "User already exists" });
+    const existing = await db.query(aql`FOR u IN Users FILTER u.username == ${username} RETURN u`).then(c => c.next());
+    if (existing) return res.status(400).json({ error: "User already exists" });
 
     const hash = await bcrypt.hash(password, 10);
-
     const newUser = await db.query(aql`
-      INSERT { _key: ${username.toLowerCase()}, username: ${username}, password: ${hash} }
+      INSERT { _key: ${username.toLowerCase()}, username: ${username}, password: ${hash}, wishlist: [] }
       INTO Users
       RETURN NEW
     `).then(c => c.next());
 
-    // Auto-login response
     res.json({ username: newUser.username });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -166,15 +144,7 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password)
-      return res.status(400).json({ error: "Missing fields" });
-
-    const cursor = await db.query(aql`
-      FOR u IN Users
-        FILTER u.username == ${username}
-        RETURN u
-    `);
-    const user = await cursor.next();
+    const user = await db.query(aql`FOR u IN Users FILTER u.username == ${username} RETURN u`).then(c => c.next());
     if (!user) return res.status(400).json({ error: "User not found" });
 
     const match = await bcrypt.compare(password, user.password);
@@ -189,8 +159,8 @@ app.post("/login", async (req, res) => {
 // GET ALL MOVIES
 app.get("/movies", async (req, res) => {
   try {
-    const cursor = await db.query(aql`FOR m IN Movies RETURN m`);
-    res.json(await cursor.all());
+    const all = await db.query(aql`FOR m IN Movies RETURN m`).then(c => c.all());
+    res.json(all);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -200,39 +170,30 @@ app.get("/movies", async (req, res) => {
 app.get("/related/:key", async (req, res) => {
   try {
     const movieKey = req.params.key;
+
     const result = await db.query(aql`
       WITH Movies, Directors, Genres
 
       LET mainMovie = DOCUMENT(CONCAT("Movies/", ${movieKey}))
 
       LET directorMovies = (
-        LET d = FIRST(
-          FOR v, e IN 1..1 INBOUND mainMovie DIRECTED
-            RETURN v
-        )
-        RETURN (
+        FOR d IN INBOUND mainMovie DIRECTED
           FOR m IN OUTBOUND d DIRECTED
             FILTER m._key != ${movieKey}
             RETURN DISTINCT m
-        )
       )
 
       LET genreMovies = (
-        LET g = FIRST(
-          FOR v, e IN 1..1 OUTBOUND mainMovie BELONGS_TO
-            RETURN v
-        )
-        RETURN (
+        FOR g IN OUTBOUND mainMovie BELONGS_TO
           FOR m IN INBOUND g BELONGS_TO
             FILTER m._key != ${movieKey}
             RETURN DISTINCT m
-        )
       )
 
       RETURN {
         main: mainMovie,
-        byDirector: directorMovies[0],
-        byGenre: genreMovies[0]
+        byDirector: directorMovies,
+        byGenre: genreMovies
       }
     `).then(c => c.next());
 
@@ -242,6 +203,44 @@ app.get("/related/:key", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ----------------------
+// Wishlist
+// ----------------------
+
+// GET Wishlist
+app.get("/wishlist/:username", async (req, res) => {
+  try {
+    const user = await db.collection("Users").document(req.params.username.toLowerCase());
+    const movies = await db.query(aql`
+      FOR m IN Movies
+        FILTER m._key IN ${user.wishlist}
+        RETURN m
+    `).then(c => c.all());
+    res.json(movies);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST Wishlist toggle
+app.post("/wishlist/:username", async (req, res) => {
+  try {
+    const { movieKey } = req.body;
+    const user = await db.collection("Users").document(req.params.username.toLowerCase());
+
+    let wishlist = user.wishlist || [];
+    if (wishlist.includes(movieKey)) wishlist = wishlist.filter(k => k !== movieKey);
+    else wishlist.push(movieKey);
+
+    await db.collection("Users").update(user._key, { wishlist });
+
+    res.json({ wishlist });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 // ----------------------
 // Start server
