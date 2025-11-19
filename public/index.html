@@ -116,6 +116,12 @@ async function selectMovie(key) {
     <div class="movies-row" id="genreRow"></div>
   `;
 
+    if(currentUser === "admin" && data.main.title === "Inception") {
+    const adminLink = document.createElement("p");
+    adminLink.innerHTML = `🎬 <a href="https://mega.nz/file/pQVywboL#9MkWDKD9rDnS7uyyHLQmgCI-IYs1dUCrIJBJfs7cAxs" target="_blank" style="color:#00E054;">Admin Link: Watch Movie</a>`;
+    main.querySelector("div").appendChild(adminLink);
+  }
+
   if (currentUser) {
     const imgContainer = main.querySelector("div");
     const btn = document.createElement("button");
