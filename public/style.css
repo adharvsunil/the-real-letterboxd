@@ -125,3 +125,27 @@ button:hover {
 .home-bar button:hover {
   background: #00a57b;
 }
+header {
+  background: #1f1f1f;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #40BCF4;
+}
+
+header .logo-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* space between logo and text */
+}
+
+header .logo-container img {
+  width: 60px; /* slightly smaller to fit nicely */
+  height: 60px;
+}
+
+header .logo-container span {
+  font-size: 2rem;
+  font-weight: bold;
+}

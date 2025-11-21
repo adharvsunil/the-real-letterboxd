@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Movie Graph Explorer</title>
+<title>Movielog</title>
 <style>
   body { font-family: Arial, sans-serif; margin:0; background:#121212; color:#eee; }
   header { background:#1f1f1f; padding:1rem; text-align:center; font-size:1.5rem; color:#40BCF4; display:flex; justify-content:space-between; align-items:center; }
@@ -25,13 +25,48 @@
   #authBox button { padding:6px 12px; margin:0 5px; background:#FF8000; color:#121212; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
   #authMsg { color:#FF8000; margin-top:0.5rem; }
   h3.section-title { color:#40BCF4; margin-top:1rem; }
+  header {
+    background: #1f1f1f;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #40BCF4;
+  }
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* space between logo and text */
+  }
+
+  .logo-container img {
+    width: 60px; /* adjust size to fit header */
+    height: 60px;
+  }
+
+  .logo-container span {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #40BCF4;
+  }
+
+  #wishlistCount {
+    cursor: pointer;
+    color: #00E054;
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <span>🎬 Movie Graph Explorer</span>
-  <span id="wishlistCount" onclick="showWishlist()"></span>
+  <div class="logo-container">
+    <img src="https://a.ltrbxd.com/logos/letterboxd-mac-icon.png" alt="Letterboxd Logo">
+    <span>Movielog</span>
+  </div>
+  <span id="wishlistCount" onclick="showWishlist()">0</span>
 </header>
 
 <div id="authBox">
@@ -44,7 +79,7 @@
 </div>
 
 <button class="home-btn" onclick="showHome()">🏠 Home</button>
-<button id="wishlistBtn" onclick="showWishlist()">💚 My Wishlist</button>
+<button id="wishlistBtn" onclick="showWishlist()">💚 My Watchlist</button>
 <button id="logoutBtn" onclick="logout()">🚪 Logout</button>
 
 <section id="movieList" class="movies-row"></section>
